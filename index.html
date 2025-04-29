@@ -1,399 +1,408 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word Matching Game</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .card {
-            transition: all 0.3s ease;
-            user-select: none;
-        }
-        .card.selected {
-            background-color: #e0e7ff !important;
-            transform: scale(1.05);
-        }
-        .card.matched {
-            background-color: #d1fae5 !important;
-            cursor: default;
-        }
-        .chinese-font {
-            font-family: 'Noto Sans SC', sans-serif;
-   }
-        .progress-bar {
-            transition: width 0.3s ease;
-        }
-        @media (max-width: 640px) {
-            .card {
-                padding: 0.75rem;
-                font-size: 0.9rem;
-            }
-        }
-    </style>
-</head>
-<body class="bg-indigo-50 flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-lg shadow-xl p-6 max-w-4xl w-full">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-indigo-800 mb-2">Word Match</h1>
-            <p class="text-lg text-indigo-600">English-Chinese Vocabulary Game</p>
-            <div class="flex justify-center gap-4 mt-2">
-                <p class="text-sm text-indigo-400">Set: <span id="currentSet">1</span>/<span id="totalSets">30</span></p>
-                <p class="text-sm text-indigo-400">Total Accuracy: <span id="totalAccuracy">0</span>%</p>
-            </div>
-            <div class="mt-4">
-                <div class="bg-gray-200 h-2 rounded-full">
-                    <div id="progressBar" class="progress-bar bg-indigo-600 h-2 rounded-full" style="width: 0%"></div>
-                </div>
-            </div>
-        </header>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div id="englishColumn" class="space-y-2"></div>
-            <div id="chineseColumn" class="space-y-2"></div>
-        </div>
-
-        <div class="text-center mt-8">
-            <button id="nextSetBtn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">Next Set</button>
-            <button id="restartBtn" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-lg ml-4 hover:bg-gray-400 transition-colors">Restart</button>
-        </div>
-
-        <div id="message" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-            <div class="bg-white p-6 rounded-lg text-center">
-                <h2 id="messageTitle" class="text-2xl font-bold mb-4"></h2>
-                <p id="messageText" class="mb-6"></p>
-                <button id="closeModalBtn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Close</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const wordSets = {
-            easy: [
-                [
-                    { english: "scientist", chinese: "科学家" },
-                    { english: "artist", chinese: "艺术家" },
-                    { english: "musician", chinese: "音乐家" },
-                    { english: "writer", chinese: "作家" },
-                    { english: "actor", chinese: "演员" },
-                    { english: "chef", chinese: "厨师" },
-                    { english: "farmer", chinese: "农民" },
-                    { english: "police officer", chinese: "警察" },
-                    { english: "firefighter", chinese: "消防员" },
-                    { english: "soldier", chinese: "士兵" },
-                    { english: "pilot", chinese: "飞行员" },
-                    { english: "driver", chinese: "司机" }
-                ],
-                [
-                    { english: "sink", chinese: "洗碗池" },
-                    { english: "bathtub", chinese: "浴缸" },
-                    { english: "shower", chinese: "淋浴" },
-                    { english: "towel", chinese: "毛巾" },
-                    { english: "soap", chinese: "肥皂" },
-                    { english: "shampoo", chinese: "洗发水" },
-                    { english: "conditioner", chinese: "护发素" },
-                    { english: "toothbrush", chinese: "牙刷" },
-                    { english: "toothpaste", chinese: "牙膏" },
-                    { english: "mirror", chinese: "镜子" },
-                    { english: "comb", chinese: "梳子" },
-                    { english: "brush", chinese: "刷子" }
-                ],
-                // 以下为补充的28组简单难度单词（每组12对）
-                [
-                    { english: "table", chinese: "桌子" },
-                    { english: "chair", chinese: "椅子" },
-                    { english: "bed", chinese: "床" },
-                    { english: "lamp", chinese: "灯" },
-                    { english: "sofa", chinese: "沙发" },
-                    { english: "desk", chinese: "书桌" },
-                    { english: "carpet", chinese: "地毯" },
-                    { english: "curtain", chinese: "窗帘" },
-                    { english: "clock", chinese: "时钟" },
-                    { english: "fan", chinese: "风扇" },
-                    { english: "door", chinese: "门" },
-                    { english: "window", chinese: "窗户" }
-                ],
-                // ... 继续补充至30组（为了简洁，省略部分组，实际代码需完整）
-                // 示例补充组
-                [
-                    { english: "apple", chinese: "苹果" },
-                    { english: "banana", chinese: "香蕉" },
-                    { english: "orange", chinese: "橙子" },
-                    { english: "grape", chinese: "葡萄" },
-                    { english: "watermelon", chinese: "西瓜" },
-                    { english: "mango", chinese: "芒果" },
-                    { english: "peach", chinese: "桃子" },
-                    { english: "pear", chinese: "梨" },
-                    { english: "strawberry", chinese: "草莓" },
-                    { english: "pineapple", chinese: "菠萝" },
-                    { english: "lemon", chinese: "柠檬" },
-                    { english: "cherry", chinese: "樱桃" }
-                ],
-                // 共30组，每组12对（需手动补充完整）
-            ],
-            medium: [
-                [
-                    { english: "hobby", chinese: "爱好" },
-                    { english: "reading", chinese: "阅读" },
-                    { english: "writing", chinese: "写作" },
-                    { english: "painting", chinese: "绘画" },
-                    { english: "drawing", chinese: "素描" },
-                    { english: "photography", chinese: "摄影" },
-                    { english: "music", chinese: "音乐" },
-                    { english: "singing", chinese: "唱歌" },
-                    { english: "dancing", chinese: "跳舞" },
-                    { english: "cooking", chinese: "烹饪" },
-                    { english: "baking", chinese: "烘焙" },
-                    { english: "gardening", chinese: "园艺" }
-                ],
-                [
-                    { english: "accomplish", chinese: "完成" },
-                    { english: "accumulate", chinese: "积累" },
-                    { english: "accuse", chinese: "指控" },
-                    { english: "achieve", chinese: "实现" },
-                    { english: "acknowledge", chinese: "承认" },
-                    { english: "adapt", chinese: "适应" },
-                    { english: "adjust", chinese: "调整" },
-                    { english: "admire", chinese: "欣赏" },
-                    { english: "admit", chinese: "承认" },
-                    { english: "adopt", chinese: "采纳" },
-                    { english: "advance", chinese: "前进" },
-                    { english: "affect", chinese: "影响" }
-                ],
-                // 补充28组中等难度单词
-                [
-                    { english: "fishing", chinese: "钓鱼" },
-                    { english: "hiking", chinese: "徒步旅行" },
-                    { english: "camping", chinese: "露营" },
-                    { english: "traveling", chinese: "旅行" },
-                    { english: "swimming", chinese: "游泳" },
-                    { english: "running", chinese: "跑步" },
-                    { english: "yoga", chinese: "瑜伽" },
-                    { english: "cycling", chinese: "骑自行车" },
-                    { english: "skiing", chinese: "滑雪" },
-                    { english: "surfing", chinese: "冲浪" },
-                    { english: "climbing", chinese: "攀岩" },
-                    { english: "golf", chinese: "高尔夫" }
-                ],
-                // ... 继续补充至30组
-            ],
-            hard: [
-                [
-                    { english: "average", chinese: "平均的" },
-                    { english: "aware", chinese: "意识到的" },
-                    { english: "basic", chinese: "基本的" },
-                    { english: "brilliant", chinese: "杰出的" },
-                    { english: "capable", chinese: "有能力的" },
-                    { english: "careful", chinese: "小心的" },
-                    { english: "certain", chinese: "确定的" },
-                    { english: "civil", chinese: "公民的" },
-                    { english: "clear", chinese: "清楚的" },
-                    { english: "clever", chinese: "聪明的" },
-                    { english: "complex", chinese: "复杂的" },
-                    { english: "confident", chinese: "自信的" }
-                ],
-                [
-                    { english: "government", chinese: "政府" },
-                    { english: "president", chinese: "总统" },
-                    { english: "prime minister", chinese: "总理" },
-                    { english: "minister", chinese: "部长" },
-                    { english: "leader", chinese: "领导" },
-                    { english: "party", chinese: "政党" },
-                    { english: "policy", chinese: "政策" },
-                    { english: "election", chinese: "选举" },
-                    { english: "democracy", chinese: "民主" },
-                    { english: "parliament", chinese: "议会" },
-                    { english: "constitution", chinese: "宪法" },
-                    { english: "diplomacy", chinese: "外交" }
-                ],
-                // 补充28组困难难度单词
-                [
-                    { english: "conscious", chinese: "有意识的" },
-                    { english: "considerate", chinese: "体贴的" },
-                    { english: "consistent", chinese: "一致的" },
-                    { english: "creative", chinese: "有创造力的" },
-                    { english: "critical", chinese: "批判的" },
-                    { english: "curious", chinese: "好奇的" },
-                    { english: "dedicated", chinese: "专注的" },
-                    { english: "dynamic", chinese: "充满活力的" },
-                    { english: "efficient", chinese: "高效的" },
-                    { english: "enthusiastic", chinese: "热情的" },
-                    { english: "flexible", chinese: "灵活的" },
-                    { english: "generous", chinese: "慷慨的" }
-                ],
-                // ... 继续补充至30组
-            ]
-        };
-
-        let currentDifficulty = 'easy';
-        let currentSetIndex = 0;
-        let matchedPairs = 0;
-        let totalAttempts = 0;
-        let correctAttempts = 0;
-        let totalAccuracy = 0;
-        let selectedEnglish = null;
-        let selectedChinese = null;
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
-        function loadWordSet() {
-            const englishColumn = document.getElementById('englishColumn');
-            const chineseColumn = document.getElementById('chineseColumn');
-            const words = wordSets[currentDifficulty][currentSetIndex];
-            const shuffledEnglish = shuffleArray([...words]);
-            const shuffledChinese = shuffleArray([...words]);
-
-            const englishFragment = document.createDocumentFragment();
-            const chineseFragment = document.createDocumentFragment();
-
-            shuffledEnglish.forEach(word => {
-                const card = document.createElement('div');
-                card.className = 'card bg-blue-100 p-4 rounded-lg cursor-pointer text-center';
-                card.textContent = word.english;
-                card.dataset.english = word.english;
-                card.addEventListener('click', () => selectCard(card, 'english'));
-                englishFragment.appendChild(card);
-            });
-
-            shuffledChinese.forEach(word => {
-                const card = document.createElement('div');
-                card.className = 'card chinese-word p-4 rounded-lg cursor-pointer text-center chinese-font';
-                card.textContent = word.chinese;
-                card.dataset.chinese = word.chinese;
-                card.addEventListener('click', () => selectCard(card, 'chinese'));
-                chineseFragment.appendChild(card);
-            });
-
-            englishColumn.innerHTML = '';
-            chineseColumn.innerHTML = '';
-            englishColumn.appendChild(englishFragment);
-            chineseColumn.appendChild(chineseFragment);
-
-            document.getElementById('currentSet').textContent = currentSetIndex + 1;
-            document.getElementById('totalSets').textContent = wordSets[currentDifficulty].length;
-            updateProgressBar();
-        }
-
-        function selectCard(card, type) {
-            if (card.classList.contains('matched')) return;
-
-            if (type === 'english') {
-                if (selectedEnglish) {
-                    selectedEnglish.classList.remove('selected');
-                }
-                selectedEnglish = card;
-                card.classList.add('selected');
-            } else {
-                if (selectedChinese) {
-                    selectedChinese.classList.remove('selected');
-                }
-                selectedChinese = card;
-                card.classList.add('selected');
-            }
-
-            if (selectedEnglish && selectedChinese) {
-                checkMatch();
-            }
-        }
-
-        function checkMatch() {
-            totalAttempts++;
-            const english = selectedEnglish.dataset.english;
-            const chinese = selectedChinese.dataset.chinese;
-            const word = wordSets[currentDifficulty][currentSetIndex].find(w => w.english === english);
-
-            if (word.chinese === chinese) {
-                correctAttempts++;
-                matchedPairs++;
-                selectedEnglish.classList.remove('selected');
-                selectedChinese.classList.remove('selected');
-                selectedEnglish.classList.add('matched');
-                selectedChinese.classList.add('matched');
-                selectedEnglish.style.pointerEvents = 'none';
-                selectedChinese.style.pointerEvents = 'none';
-
-                if (matchedPairs === wordSets[currentDifficulty][currentSetIndex].length) {
-                    showMessage('Set Complete!', `Accuracy: ${(correctAttempts / totalAttempts * 100).toFixed(2)}%`, true);
-                    updateStats();
-                }
-            } else {
-                selectedEnglish.classList.remove('selected');
-                selectedChinese.classList.remove('selected');
-                selectedEnglish.classList.add('bg-red-100');
-                selectedChinese.classList.add('bg-red-100');
-                setTimeout(() => {
-                    selectedEnglish.classList.remove('bg-red-100');
-                    selectedChinese.classList.remove('bg-red-100');
-                }, 500);
-            }
-
-            selectedEnglish = null;
-            selectedChinese = null;
-            updateStats();
-        }
-
-        function updateStats() {
-            const setAccuracy = totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0;
-            const totalSetsPlayed = currentSetIndex + 1;
-            totalAccuracy = ((totalAccuracy * (totalSetsPlayed - 1)) + setAccuracy) / totalSetsPlayed;
-            document.getElementById('totalAccuracy').textContent = totalAccuracy.toFixed(2);
-        }
-
-        function updateProgressBar() {
-            const progress = (matchedPairs / wordSets[currentDifficulty][currentSetIndex].length) * 100;
-            document.getElementById('progressBar').style.width = `${progress}%`;
-        }
-
-        function showMessage(title, text, keepOpen = false) {
-            document.getElementById('messageTitle').textContent = title;
-            document.getElementById('messageText').textContent = text;
-            document.getElementById('message').classList.remove('hidden');
-
-            if (!keepOpen) {
-                setTimeout(() => {
-                    document.getElementById('message').classList.add('hidden');
-                }, 2000);
-            }
-        }
-
-        function startGame() {
-            matchedPairs = 0;
-            totalAttempts = 0;
-            correctAttempts = 0;
-            loadWordSet();
-        }
-
-        document.getElementById('nextSetBtn').addEventListener('click', () => {
-            if (currentSetIndex < wordSets[currentDifficulty].length - 1) {
-                currentSetIndex++;
-                startGame();
-            } else {
-                showMessage('Game Over!', `Final Accuracy: ${totalAccuracy.toFixed(2)}%`, true);
-            }
-        });
-
-        document.getElementById('restartBtn').addEventListener('click', () => {
-            currentSetIndex = 0;
-            totalAccuracy = 0;
-            document.getElementById('totalAccuracy').textContent = '0';
-            startGame();
-        });
-
-        document.getElementById('closeModalBtn').addEventListener('click', () => {
-            document.getElementById('message').classList.add('hidden');
-        });
-
-        document.getElementById('closeModalBtn').addEventListener('touchend', () => {
-            document.getElementById('message').classList.add('hidden');
-        });
-
-        startGame();
-    </script>
-</body>
-</html>
+ <html lang="en">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Ghibli Magic - AI Art Generator</title>
+     <meta name="description" content="Create magical Studio Ghibli-style artwork with AI. Transform your words into breathtaking animated scenes for free.">
+     <script src="https://cdn.tailwindcss.com"></script>
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+     <style>
+         @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Shadows+Into+Light&display=swap');
+         
+         :root {
+             --ghibli-blue: #6bb2e2;
+             --ghibli-green: #8cc8a0;
+             --ghibli-yellow: #f7d56a;
+             --ghibli-red: #e87a5d;
+         }
+         
+         body {
+             font-family: 'Quicksand', sans-serif;
+             background-color: #f8f5f0;
+             color: #4a4a4a;
+             background-image: url('https://i.imgur.com/5Z3Q2Qp.png');
+             background-attachment: fixed;
+             background-size: 300px;
+             background-position: right bottom;
+             background-repeat: no-repeat;
+         }
+         
+         .ghibli-font {
+             font-family: 'Shadows Into Light', cursive;
+         }
+         
+         .btn-ghibli {
+             background: linear-gradient(135deg, var(--ghibli-blue), var(--ghibli-green));
+             color: white;
+             box-shadow: 0 4px 15px rgba(107, 178, 226, 0.4);
+             transition: all 0.3s ease;
+         }
+         
+         .btn-ghibli:hover {
+             transform: translateY(-3px);
+             box-shadow: 0 8px 20px rgba(107, 178, 226, 0.6);
+         }
+         
+         .ghibli-card {
+             background: white;
+             border-radius: 15px;
+             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+             transition: all 0.3s ease;
+             border: 1px solid rgba(0, 0, 0, 0.05);
+         }
+         
+         .ghibli-border {
+             border: 2px dashed var(--ghibli-blue);
+             border-radius: 15px;
+         }
+         
+         .spinner {
+             width: 50px;
+             height: 50px;
+             border: 5px solid rgba(107, 178, 226, 0.3);
+             border-radius: 50%;
+             border-top-color: var(--ghibli-blue);
+             animation: spin 1s ease-in-out infinite;
+         }
+         
+         @keyframes spin {
+             to { transform: rotate(360deg); }
+         }
+         
+         .fade-in {
+             animation: fadeIn 0.5s ease-in;
+         }
+         
+         @keyframes fadeIn {
+             from { opacity: 0; }
+             to { opacity: 1; }
+         }
+     </style>
+ </head>
+ <body class="min-h-screen">
+     <!-- Header -->
+     <header class="py-8">
+         <div class="container mx-auto px-4">
+             <div class="flex flex-col items-center text-center">
+                 <div class="flex items-center mb-4">
+                     <i class="fas fa-magic text-4xl mr-3 text-ghibli-blue"></i>
+                     <h1 class="ghibli-font text-5xl font-bold text-gray-800">
+                         <span class="text-ghibli-blue">Ghibli</span> 
+                         <span class="text-ghibli-green">Magic</span>
+                     </h1>
+                 </div>
+                 <p class="text-xl text-gray-600 max-w-2xl">
+                     Transform your words into magical Studio Ghibli-style artwork with AI
+                 </p>
+             </div>
+         </div>
+     </header>
+ 
+     <!-- Main Content -->
+     <main class="container mx-auto px-4 py-12">
+         <div class="flex flex-col lg:flex-row gap-8">
+             <!-- Generator Panel -->
+             <div class="lg:w-2/3">
+                 <div class="ghibli-card p-8">
+                     <h2 class="ghibli-font text-3xl font-bold mb-6 text-ghibli-blue">
+                         <i class="fas fa-paint-brush mr-2"></i> Create Your Ghibli Art
+                     </h2>
+                     
+                     <div class="mb-6">
+                         <label class="block text-gray-700 mb-2 font-medium">Describe your dream scene:</label>
+                         <textarea 
+                             id="prompt-input" 
+                             class="w-full px-4 py-3 rounded-lg border-2 border-ghibli-green focus:border-ghibli-blue focus:outline-none resize-none" 
+                             rows="5" 
+                             placeholder="A young girl flying on a dragon over a misty valley at sunset, with small spirits watching from the trees below..."></textarea>
+                     </div>
+                     
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                         <div>
+                             <label class="block text-gray-700 mb-2 font-medium">Style Strength:</label>
+                             <select id="style-select" class="w-full px-4 py-3 rounded-lg border-2 border-ghibli-green focus:border-ghibli-blue focus:outline-none">
+                                 <option value="0.5">Subtle</option>
+                                 <option value="0.7" selected>Balanced</option>
+                                 <option value="0.9">Strong</option>
+                             </select>
+                         </div>
+                         <div>
+                             <label class="block text-gray-700 mb-2 font-medium">Aspect Ratio:</label>
+                             <select id="ratio-select" class="w-full px-4 py-3 rounded-lg border-2 border-ghibli-green focus:border-ghibli-blue focus:outline-none">
+                                 <option value="square">Square (1:1)</option>
+                                 <option value="landscape">Landscape (16:9)</option>
+                                 <option value="portrait">Portrait (9:16)</option>
+                             </select>
+                         </div>
+                     </div>
+                     
+                     <button id="generate-btn" class="btn-ghibli px-8 py-4 rounded-lg font-bold text-lg w-full">
+                         <i class="fas fa-magic mr-2"></i> Generate Artwork
+                     </button>
+                 </div>
+                 
+                 <!-- Generation Progress -->
+                 <div id="progress-section" class="ghibli-card p-8 mt-8 hidden">
+                     <h3 class="ghibli-font text-2xl font-bold mb-4 text-ghibli-blue">
+                         <i class="fas fa-spinner fa-spin mr-2"></i> Creating Your Art...
+                     </h3>
+                     <div class="flex items-center">
+                         <div class="spinner mr-4"></div>
+                         <div class="flex-1">
+                             <div class="w-full bg-gray-200 rounded-full h-4">
+                                 <div id="progress-bar" class="bg-ghibli-green h-4 rounded-full" style="width: 0%"></div>
+                             </div>
+                             <p id="progress-text" class="text-sm text-gray-600 mt-2">Initializing the magic...</p>
+                         </div>
+                     </div>
+                 </div>
+                 
+                 <!-- Results -->
+                 <div id="results-section" class="ghibli-card p-8 mt-8 hidden">
+                     <div class="flex justify-between items-center mb-6">
+                         <h3 class="ghibli-font text-2xl font-bold text-ghibli-blue">
+                             <i class="fas fa-image mr-2"></i> Your Ghibli Creation
+                         </h3>
+                         <div class="flex gap-2">
+                             <button id="download-btn" class="bg-ghibli-green hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium">
+                                 <i class="fas fa-download mr-2"></i> Download
+                             </button>
+                             <button id="new-btn" class="bg-ghibli-blue hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium">
+                                 <i class="fas fa-plus mr-2"></i> New
+                             </button>
+                         </div>
+                     </div>
+                     
+                     <div class="ghibli-border p-4 mb-6">
+                         <img id="result-image" src="" alt="Your generated Ghibli artwork" class="w-full rounded-lg hidden">
+                         <div id="image-placeholder" class="flex flex-col items-center justify-center py-12">
+                             <i class="fas fa-image text-6xl text-gray-300 mb-4"></i>
+                             <p class="text-gray-500">Your artwork will appear here</p>
+                         </div>
+                     </div>
+                     
+                     <div class="bg-blue-50 p-4 rounded-lg">
+                         <h4 class="font-bold text-ghibli-blue mb-2">Prompt used:</h4>
+                         <p id="used-prompt" class="text-gray-700 italic">No prompt generated yet</p>
+                     </div>
+                 </div>
+             </div>
+             
+             <!-- Examples & Info -->
+             <div class="lg:w-1/3">
+                 <div class="ghibli-card p-6 mb-8">
+                     <h3 class="ghibli-font text-2xl font-bold mb-4 text-ghibli-red">
+                         <i class="fas fa-lightbulb mr-2"></i> Prompt Tips
+                     </h3>
+                     <ul class="space-y-3">
+                         <li class="flex items-start">
+                             <i class="fas fa-seedling text-ghibli-green mr-2 mt-1"></i>
+                             <span>Include "Studio Ghibli style" in your prompt</span>
+                         </li>
+                         <li class="flex items-start">
+                             <i class="fas fa-palette text-ghibli-blue mr-2 mt-1"></i>
+                             <span>Describe colors and lighting (e.g., "warm sunset glow")</span>
+                         </li>
+                         <li class="flex items-start">
+                             <i class="fas fa-magic text-ghibli-yellow mr-2 mt-1"></i>
+                             <span>Mention specific Ghibli elements (spirits, flying machines, etc.)</span>
+                         </li>
+                         <li class="flex items-start">
+                             <i class="fas fa-landscape text-ghibli-red mr-2 mt-1"></i>
+                             <span>Describe the setting in detail (forest, seaside, etc.)</span>
+                         </li>
+                     </ul>
+                 </div>
+                 
+                 <div class="ghibli-card p-6">
+                     <h3 class="ghibli-font text-2xl font-bold mb-4 text-ghibli-blue">
+                         <i class="fas fa-star mr-2"></i> Example Prompts
+                     </h3>
+                     <div class="space-y-4">
+                         <div class="cursor-pointer hover:bg-blue-50 p-3 rounded-lg transition" onclick="useExamplePrompt(0)">
+                             <p class="font-medium">"Studio Ghibli style magical forest with glowing spirits and ancient trees, soft watercolor lighting"</p>
+                         </div>
+                         <div class="cursor-pointer hover:bg-blue-50 p-3 rounded-lg transition" onclick="useExamplePrompt(1)">
+                             <p class="font-medium">"Ghibli style flying castle above clouds at golden hour, intricate steampunk details"</p>
+                         </div>
+                         <div class="cursor-pointer hover:bg-blue-50 p-3 rounded-lg transition" onclick="useExamplePrompt(2)">
+                             <p class="font-medium">"Studio Ghibli anime scene of a young witch delivering packages by broomstick over a coastal town"</p>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+         </div>
+     </main>
+ 
+     <!-- Footer -->
+     <footer class="bg-gray-100 border-t border-gray-200 py-12 mt-12">
+         <div class="container mx-auto px-4">
+             <div class="flex flex-col md:flex-row justify-between items-center">
+                 <div class="mb-6 md:mb-0">
+                     <h2 class="ghibli-font text-3xl font-bold">
+                         <span class="text-ghibli-blue">Ghibli</span> 
+                         <span class="text-ghibli-green">Magic</span>
+                     </h2>
+                     <p class="text-gray-600 mt-2">Create magical artwork with AI</p>
+                 </div>
+                 <div class="text-sm text-gray-500">
+                     <p>Powered by Pollinations.ai API</p>
+                     <p class="mt-1">This is a fan-made project and not affiliated with Studio Ghibli.</p>
+                 </div>
+             </div>
+         </div>
+     </footer>
+ 
+     <script>
+         // Example prompts
+         const examplePrompts = [
+             "Studio Ghibli style magical forest with glowing spirits and ancient trees, soft watercolor lighting",
+             "Ghibli style flying castle above clouds at golden hour, intricate steampunk details",
+             "Studio Ghibli anime scene of a young witch delivering packages by broomstick over a coastal town"
+         ];
+         
+         // DOM elements
+         const generateBtn = document.getElementById('generate-btn');
+         const promptInput = document.getElementById('prompt-input');
+         const progressSection = document.getElementById('progress-section');
+         const resultsSection = document.getElementById('results-section');
+         const progressBar = document.getElementById('progress-bar');
+         const progressText = document.getElementById('progress-text');
+         const resultImage = document.getElementById('result-image');
+         const imagePlaceholder = document.getElementById('image-placeholder');
+         const usedPrompt = document.getElementById('used-prompt');
+         const downloadBtn = document.getElementById('download-btn');
+         const newBtn = document.getElementById('new-btn');
+         const styleSelect = document.getElementById('style-select');
+         const ratioSelect = document.getElementById('ratio-select');
+         
+         // Event listeners
+         generateBtn.addEventListener('click', generateArt);
+         downloadBtn.addEventListener('click', downloadImage);
+         newBtn.addEventListener('click', resetGenerator);
+         
+         // Functions
+         function useExamplePrompt(index) {
+             promptInput.value = examplePrompts[index];
+         }
+         
+         function generateArt() {
+             const prompt = promptInput.value.trim();
+             
+             if (!prompt) {
+                 alert("Please enter a description for your artwork!");
+                 return;
+             }
+             
+             // Show progress section
+             progressSection.classList.remove('hidden');
+             resultsSection.classList.add('hidden');
+             
+             // Get user selections
+             const styleStrength = styleSelect.value;
+             const ratio = ratioSelect.value;
+             
+             // Determine dimensions based on aspect ratio
+             let width, height;
+             switch(ratio) {
+                 case 'landscape':
+                     width = 1024;
+                     height = 576;
+                     break;
+                 case 'portrait':
+                     width = 576;
+                     height = 1024;
+                     break;
+                 default: // square
+                     width = 768;
+                     height = 768;
+             }
+             
+             // Construct the API URL
+             const apiUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+                 `Studio Ghibli style, ${prompt}, anime, detailed, vibrant colors, ${width}x${height}?seed=${Math.floor(Math.random() * 100000)}`
+             )}`;
+             
+             // Simulate progress while waiting for the API
+             let progress = 0;
+             const progressInterval = setInterval(() => {
+                 progress += Math.random() * 10;
+                 if (progress > 90) progress = 90; // Leave 10% for final loading
+                 
+                 progressBar.style.width = `${progress}%`;
+                 
+                 if (progress < 30) {
+                     progressText.textContent = "Connecting to the spirit world...";
+                 } else if (progress < 60) {
+                     progressText.textContent = "Painting your dream with watercolors...";
+                 } else {
+                     progressText.textContent = "Adding the final Ghibli touches...";
+                 }
+             }, 500);
+             
+             // Create image element to load from API
+             const img = new Image();
+             img.crossOrigin = "anonymous";
+             img.src = apiUrl;
+             
+             img.onload = function() {
+                 clearInterval(progressInterval);
+                 progressBar.style.width = '100%';
+                 progressText.textContent = "Your artwork is ready!";
+                 
+                 // Small delay to show completion
+                 setTimeout(() => {
+                     showResult(prompt, img.src);
+                 }, 500);
+             };
+             
+             img.onerror = function() {
+                 clearInterval(progressInterval);
+                 progressText.textContent = "Error generating image. Please try again.";
+                 progressBar.style.backgroundColor = 'var(--ghibli-red)';
+             };
+         }
+         
+         function showResult(prompt, imageUrl) {
+             // Hide progress, show results
+             progressSection.classList.add('hidden');
+             resultsSection.classList.remove('hidden');
+             
+             // Set the used prompt
+             usedPrompt.textContent = `"${prompt}"`;
+             
+             // Display the generated image
+             imagePlaceholder.classList.add('hidden');
+             resultImage.src = imageUrl;
+             resultImage.onload = function() {
+                 resultImage.classList.remove('hidden');
+                 resultImage.classList.add('fade-in');
+             };
+         }
+         
+         function downloadImage() {
+             if (!resultImage.src) return;
+             
+             // Create a temporary link to download the image
+             const link = document.createElement('a');
+             link.href = resultImage.src;
+             link.download = `ghibli-art-${Date.now()}.jpg`;
+             document.body.appendChild(link);
+             link.click();
+             document.body.removeChild(link);
+         }
+         
+         function resetGenerator() {
+             promptInput.value = '';
+             resultsSection.classList.add('hidden');
+             resultImage.src = '';
+             resultImage.classList.add('hidden');
+             imagePlaceholder.classList.remove('hidden');
+             progressBar.style.width = '0%';
+             progressBar.style.backgroundColor = 'var(--ghibli-green)';
+         }
+     </script>
+ </body>
+ </html>
+ 
