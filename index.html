@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghibli Magic - AI Art Generator</title>
+    <meta name="description" content="Create magical Studio Ghibli-style artwork with AI. Transform your words into breathtaking animated scenes for free.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Shadows+Into+Light&display=swap');
+        
+        :root {
+            --ghibli-blue: #6bb2e2;
+            --ghibli-green: #8cc8a0;
+            --ghibli-yellow: #f7d56a;
+            --ghibli-red: #e87a5d;
+        }
+        
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #f8f5f0;
+            color: #4a4a4a;
+            background-image: url('https://i.imgur.com/5Z3Q2Qp.png');
+            background-attachment: fixed;
+            background-size: 300px;
+            background-position: right bottom;
+            background-repeat: no-repeat;
+        }
+        
+        .ghibli-font {
+            font-family: 'Shadows Into Light', cursive;
+        }
+        
+        .btn-ghibli {
+            background: linear-gradient(135deg, var(--ghibli-blue), var(--ghibli-green));
+            color: white;
+            box-shadow: 0 4px 15px rgba(107, 178, 226, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-ghibli:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(107, 178, 226, 0.6);
+        }
+        
+        .ghibli-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .ghibli-border {
+            border: 2px dashed var(--ghibli-blue);
+            border-radius: 15px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(107, 178, 226, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--ghibli-blue);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col items-center text-center">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-magic text-4xl mr-3 text-ghibli-blue"></i>
+                    <h1 class="ghibli-font text-5xl font-bold text-gray-800">
+                        <span class="text-ghibli-blue">Ghibli</span> 
+                        <span class="text-ghibli-green">Magic</span>
+                    </h1>
+                </div>
+                <p class="text-xl text-gray-600 max-w-2xl">
+                    Transform your words into magical Studio Ghibli-style artwork with AI
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-12">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Generator Panel -->
+            <div class="lg:w-2/3">
+                <div class="ghibli-card p-8">
+                    <h2 class="ghibli-font text-3xl font-bold mb-6 text-ghibli-blue">
+                        <i class="fas fa-paint-brush mr-2"></i> Create Your Ghibli Art
+                    </h2>
+                    
+                    <div class="mb-6">
+                        <label class="block text-gray-700 mb-2 font-medium">Describe your dream scene:</label>
+                        <textarea 
+                            id="prompt-input" 
+                            class="w-full px-4 py-3 rounded-lg border-2 border-ghibli-green focus:border-ghibli-blue focus:outline-none resize-none" 
+                            rows="5" 
+                            placeholder="A young girl flying on a dragon over a misty valley at sunset, with small spirits watching from the trees below..."></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-gray-700 mb-2 font-medium">Style Strength:</label>
+                            <select id="style-select" class="w-full px-4 py-3 rounded-lg border-2 border-ghibli-green focus:border-ghibli-blue focus:outline-none">
+                                <option value="0.5">Subtle</option>
+                                <option value="0.7" selected>Balanced</option>
+                                <option value="0.9">Strong</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 mb-2 font-medium">Aspect Ratio:</label>
+                            <select id="ratio-select" class="w-full px-4 py-3 rounded-lg border-2 border-ghibli-green focus:border-ghibli-blue focus:outline-none">
+                                <option value="square">Square (1:1)</option>
+                                <option value="landscape">Landscape (16:9)</option>
+                                <option value="portrait">Portrait (9:16)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button id="generate-btn" class="btn-ghibli px-8 py-4 rounded-lg font-bold text-lg w-full">
+                        <i class="fas fa-magic mr-2"></i> Generate Artwork
+                    </button>
+                </div>
+                
+                <!-- Generation Progress -->
+                <div id="progress-section" class="ghibli-card p-8 mt-8 hidden">
+                    <h3 class="ghibli-font text-2xl font-bold mb-4 text-ghibli-blue">
+                        <i class="fas fa-spinner fa-spin mr-2"></i> Creating Your Art...
+                    </h3>
+                    <div class="flex items-center">
+                        <div class="spinner mr-4"></div>
+                        <div class="flex-1">
+                            <div class="w-full bg-gray-200 rounded-full h-4">
+                                <div id="progress-bar" class="bg-ghibli-green h-4 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <p id="progress-text" class="text-sm text-gray-600 mt-2">Initializing the magic...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Results -->
+                <div id="results-section" class="ghibli-card p-8 mt-8 hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="ghibli-font text-2xl font-bold text-ghibli-blue">
+                            <i class="fas fa-image mr-2"></i> Your Ghibli Creation
+                        </h3>
+                        <div class="flex gap-2">
+                            <button id="download-btn" class="bg-ghibli-green hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium">
+                                <i class="fas fa-download mr-2"></i> Download
+                            </button>
+                            <button id="new-btn" class="bg-ghibli-blue hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-medium">
+                                <i class="fas fa-plus mr-2"></i> New
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="ghibli-border p-4 mb-6">
+                        <img id="result-image" src="" alt="Your generated Ghibli artwork" class="w-full rounded-lg hidden">
+                        <div id="image-placeholder" class="flex flex-col items-center justify-center py-12">
+                            <i class="fas fa-image text-6xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500">Your artwork will appear here</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-ghibli-blue mb-2">Prompt used:</h4>
+                        <p id="used-prompt" class="text-gray-700 italic">No prompt generated yet</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Examples & Info -->
+            <div class="lg:w-1/3">
+                <div class="ghibli-card p-6 mb-8">
+                    <h3 class="ghibli-font text-2xl font-bold mb-4 text-ghibli-red">
+                        <i class="fas fa-lightbulb mr-2"></i> Prompt Tips
+                    </h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-start">
+                            <i class="fas fa-seedling text-ghibli-green mr-2 mt-1"></i>
+                            <span>Include "Studio Ghibli style" in your prompt</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-palette text-ghibli-blue mr-2 mt-1"></i>
+                            <span>Describe colors and lighting (e.g., "warm sunset glow")</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-magic text-ghibli-yellow mr-2 mt-1"></i>
+                            <span>Mention specific Ghibli elements (spirits, flying machines, etc.)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-landscape text-ghibli-red mr-2 mt-1"></i>
+                            <span>Describe the setting in detail (forest, seaside, etc.)</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="ghibli-card p-6">
+                    <h3 class="ghibli-font text-2xl font-bold mb-4 text-ghibli-blue">
+                        <i class="fas fa-star mr-2"></i> Example Prompts
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="cursor-pointer hover:bg-blue-50 p-3 rounded-lg transition" onclick="useExamplePrompt(0)">
+                            <p class="font-medium">"Studio Ghibli style magical forest with glowing spirits and ancient trees, soft watercolor lighting"</p>
+                        </div>
+                        <div class="cursor-pointer hover:bg-blue-50 p-3 rounded-lg transition" onclick="useExamplePrompt(1)">
+                            <p class="font-medium">"Ghibli style flying castle above clouds at golden hour, intricate steampunk details"</p>
+                        </div>
+                        <div class="cursor-pointer hover:bg-blue-50 p-3 rounded-lg transition" onclick="useExamplePrompt(2)">
+                            <p class="font-medium">"Studio Ghibli anime scene of a young witch delivering packages by broomstick over a coastal town"</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-100 border-t border-gray-200 py-12 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-6 md:mb-0">
+                    <h2 class="ghibli-font text-3xl font-bold">
+                        <span class="text-ghibli-blue">Ghibli</span> 
+                        <span class="text-ghibli-green">Magic</span>
+                    </h2>
+                    <p class="text-gray-600 mt-2">Create magical artwork with AI</p>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <p>Powered by Pollinations.ai API</p>
+                    <p class="mt-1">This is a fan-made project and not affiliated with Studio Ghibli.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Example prompts
+        const examplePrompts = [
+            "Studio Ghibli style magical forest with glowing spirits and ancient trees, soft watercolor lighting",
+            "Ghibli style flying castle above clouds at golden hour, intricate steampunk details",
+            "Studio Ghibli anime scene of a young witch delivering packages by broomstick over a coastal town"
+        ];
+        
+        // DOM elements
+        const generateBtn = document.getElementById('generate-btn');
+        const promptInput = document.getElementById('prompt-input');
+        const progressSection = document.getElementById('progress-section');
+        const resultsSection = document.getElementById('results-section');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const resultImage = document.getElementById('result-image');
+        const imagePlaceholder = document.getElementById('image-placeholder');
+        const usedPrompt = document.getElementById('used-prompt');
+        const downloadBtn = document.getElementById('download-btn');
+        const newBtn = document.getElementById('new-btn');
+        const styleSelect = document.getElementById('style-select');
+        const ratioSelect = document.getElementById('ratio-select');
+        
+        // Event listeners
+        generateBtn.addEventListener('click', generateArt);
+        downloadBtn.addEventListener('click', downloadImage);
+        newBtn.addEventListener('click', resetGenerator);
+        
+        // Functions
+        function useExamplePrompt(index) {
+            promptInput.value = examplePrompts[index];
+        }
+        
+        function generateArt() {
+            const prompt = promptInput.value.trim();
+            
+            if (!prompt) {
+                alert("Please enter a description for your artwork!");
+                return;
+            }
+            
+            // Show progress section
+            progressSection.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            
+            // Get user selections
+            const styleStrength = styleSelect.value;
+            const ratio = ratioSelect.value;
+            
+            // Determine dimensions based on aspect ratio
+            let width, height;
+            switch(ratio) {
+                case 'landscape':
+                    width = 1024;
+                    height = 576;
+                    break;
+                case 'portrait':
+                    width = 576;
+                    height = 1024;
+                    break;
+                default: // square
+                    width = 768;
+                    height = 768;
+            }
+            
+            // Construct the API URL
+            const apiUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+                `Studio Ghibli style, ${prompt}, anime, detailed, vibrant colors, ${width}x${height}?seed=${Math.floor(Math.random() * 100000)}`
+            )}`;
+            
+            // Simulate progress while waiting for the API
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 90) progress = 90; // Leave 10% for final loading
+                
+                progressBar.style.width = `${progress}%`;
+                
+                if (progress < 30) {
+                    progressText.textContent = "Connecting to the spirit world...";
+                } else if (progress < 60) {
+                    progressText.textContent = "Painting your dream with watercolors...";
+                } else {
+                    progressText.textContent = "Adding the final Ghibli touches...";
+                }
+            }, 500);
+            
+            // Create image element to load from API
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = apiUrl;
+            
+            img.onload = function() {
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                progressText.textContent = "Your artwork is ready!";
+                
+                // Small delay to show completion
+                setTimeout(() => {
+                    showResult(prompt, img.src);
+                }, 500);
+            };
+            
+            img.onerror = function() {
+                clearInterval(progressInterval);
+                progressText.textContent = "Error generating image. Please try again.";
+                progressBar.style.backgroundColor = 'var(--ghibli-red)';
+            };
+        }
+        
+        function showResult(prompt, imageUrl) {
+            // Hide progress, show results
+            progressSection.classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+            
+            // Set the used prompt
+            usedPrompt.textContent = `"${prompt}"`;
+            
+            // Display the generated image
+            imagePlaceholder.classList.add('hidden');
+            resultImage.src = imageUrl;
+            resultImage.onload = function() {
+                resultImage.classList.remove('hidden');
+                resultImage.classList.add('fade-in');
+            };
+        }
+        
+        function downloadImage() {
+            if (!resultImage.src) return;
+            
+            // Create a temporary link to download the image
+            const link = document.createElement('a');
+            link.href = resultImage.src;
+            link.download = `ghibli-art-${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function resetGenerator() {
+            promptInput.value = '';
+            resultsSection.classList.add('hidden');
+            resultImage.src = '';
+            resultImage.classList.add('hidden');
+            imagePlaceholder.classList.remove('hidden');
+            progressBar.style.width = '0%';
+            progressBar.style.backgroundColor = 'var(--ghibli-green)';
+        }
+    </script>
+</body>
+</html>
